@@ -602,6 +602,67 @@
 /* Push navbar down when bar is visible */
 .bar-visible nav { top: 36px; }
 
+
+/* ===== SPONSOR SLIDER ===== */
+#sponsors { background: var(--dark-1); padding: 70px 0; overflow: hidden; }
+
+.sponsors-header {
+  text-align: center; margin-bottom: 3rem; padding: 0 5%;
+}
+
+.sponsors-track-wrapper {
+  overflow: hidden; position: relative;
+  mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
+}
+
+.sponsors-track {
+  display: flex; align-items: center; gap: 2rem;
+  width: max-content;
+  animation: sponsorSlide 14s linear infinite;
+}
+
+.sponsors-track:hover { animation-play-state: paused; }
+
+@keyframes sponsorSlide {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.sponsor-card {
+  width: 220px; height: 130px; flex-shrink: 0;
+  border-radius: 14px; overflow: hidden;
+  border: 1px solid rgba(125,51,255,0.2);
+  background: var(--dark);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0.6rem; position: relative;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  cursor: pointer;
+}
+
+.sponsor-card:hover {
+  border-color: rgba(125,51,255,0.5);
+  box-shadow: 0 8px 30px rgba(125,51,255,0.15);
+}
+
+.sponsor-card img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.sponsor-card:hover img { transform: scale(1.05); }
+
+.sponsor-card-name {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, rgba(20,18,35,0.9));
+  padding: 0.8rem 0.7rem 0.5rem;
+  font-size: 0.8rem; font-weight: 700;
+  color: var(--white); text-align: center;
+}
+
+
 </style>
 </head>
 <body>
@@ -687,6 +748,68 @@
     </div>
   </div>
 </section>
+
+
+
+<!-- SPONSOR SLIDER -->
+<section id="sponsors">
+  <div class="sponsors-header reveal">
+    <div class="section-tag">🤝 স্পনসর</div>
+    <h2 class="section-title">আমাদের <span class="accent">স্পনসর</span></h2>
+    <p class="section-desc">যারা আমাদের এই যাত্রায় পাশে আছেন</p>
+  </div>
+
+  <div class="sponsors-track-wrapper">
+    <div class="sponsors-track">
+
+      <!-- Original 4 -->
+      <div class="sponsor-card">
+        <img src="sponsor1.jpg" alt="স্পনসর ১"
+             onerror="this.src='sponsor1.png'">
+        <div class="sponsor-card-name">mecozx.</div>
+      </div>
+      <div class="sponsor-card">
+        <img src="sponsor2.jpg" alt="স্পনসর ২"
+             onerror="this.src='sponsor2.png'">
+        <div class="sponsor-card-name">AERO</div>
+      </div>
+      <div class="sponsor-card">
+        <img src="sponsor3.jpg" alt="স্পনসর ৩"
+             onerror="this.src='sponsor3.png'">
+        <div class="sponsor-card-name">Cybr.</div>
+      </div>
+      <div class="sponsor-card">
+        <img src="sponsor4.jpg" alt="স্পনসর ৪"
+             onerror="this.src='sponsor4.png'">
+        <div class="sponsor-card-name">Hoverr.</div>
+      </div>
+
+      <!-- Duplicates for seamless loop -->
+      <div class="sponsor-card">
+        <img src="sponsor1.jpg" alt="স্পনসর ১"
+             onerror="this.src='sponsor1.png'">
+        <div class="sponsor-card-name">mecozx.</div>
+      </div>
+      <div class="sponsor-card">
+        <img src="sponsor2.jpg" alt="স্পনসর ২"
+             onerror="this.src='sponsor2.png'">
+        <div class="sponsor-card-name">AERO</div>
+      </div>
+      <div class="sponsor-card">
+        <img src="sponsor3.jpg" alt="স্পনসর ৩"
+             onerror="this.src='sponsor3.png'">
+        <div class="sponsor-card-name">Cybr.</div>
+      </div>
+      <div class="sponsor-card">
+        <img src="sponsor4.jpg" alt="স্পনসর ৪"
+             onerror="this.src='sponsor4.png'">
+        <div class="sponsor-card-name">Hoverr.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 
 <!-- COURSE MODULES -->
 <section id="courses">
@@ -1060,7 +1183,7 @@
   <div class="bar-text">
     <span class="bar-badge">🎓 ফ্রি সেমিনার</span>
     <span>ডিজিটাল ক্যারিয়ার নিয়ে বিনামূল্যে লাইভ সেমিনার — আসন সীমিত!</span>
-    <a href="#enroll" class="bar-btn" onclick="closeBar()">এখনই রেজিস্ট্রেশন করো →</a>
+    <a href="https://discord.gg/VYNVQ9uubB" class="bar-btn" onclick="closeBar()">এখনই রেজিস্ট্রেশন করো →</a>
   </div>
   <button class="bar-close" onclick="closeBar()" aria-label="বন্ধ করো">✕</button>
 </div>
