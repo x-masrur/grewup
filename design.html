@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ডিজাইন শোকেস — GrEwUp 2.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --violet:#7D33FF; --violet-1:#9A5FFF;
+    --dark:#141223; --dark-1:#1E1C30;
+    --white:#fff; --white-2:#C8C4E0;
+    --font-bn:'Hind Siliguri',sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--font-bn); background:var(--dark); color:var(--white); min-height:100vh; }
+
+  nav {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:1rem 5%; background:rgba(20,18,35,0.95);
+    border-bottom:1px solid rgba(125,51,255,0.15);
+    position:sticky; top:0; z-index:100; backdrop-filter:blur(16px);
+  }
+  .nav-logo { font-size:1.3rem; font-weight:900; text-decoration:none; color:var(--white); }
+  .nav-logo span { color:var(--violet); }
+  .nav-back { color:var(--white-2); text-decoration:none; font-size:0.85rem; transition:color 0.2s; }
+  .nav-back:hover { color:var(--violet); }
+
+  .showcase-header {
+    text-align:center; padding:3.5rem 5% 2rem;
+  }
+  .tag {
+    display:inline-block; background:rgba(125,51,255,0.12);
+    border:1px solid rgba(125,51,255,0.3); color:var(--violet-1);
+    padding:0.3rem 1rem; border-radius:50px; font-size:0.8rem; margin-bottom:1rem;
+  }
+  .showcase-header h1 { font-size:clamp(1.8rem,4vw,2.8rem); font-weight:900; margin-bottom:0.5rem; }
+  .showcase-header h1 span { color:var(--violet); }
+  .showcase-header p { color:var(--white-2); font-size:0.95rem; }
+
+  /* grid */
+  .design-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(260px,1fr));
+    gap:1.5rem; padding:1rem 5% 5rem; max-width:1200px; margin:0 auto;
+  }
+
+  .design-card {
+    background:var(--dark-1); border:1px solid rgba(125,51,255,0.15);
+    border-radius:16px; overflow:hidden; transition:all 0.3s; cursor:pointer;
+  }
+  .design-card:hover {
+    border-color:rgba(125,51,255,0.4); transform:translateY(-6px);
+    box-shadow:0 20px 40px rgba(125,51,255,0.12);
+  }
+
+  .design-img-wrap {
+    width:100%; aspect-ratio:4/3; overflow:hidden; position:relative;
+    background:linear-gradient(135deg,var(--dark),var(--dark-1));
+  }
+  .design-img-wrap img {
+    width:100%; height:100%; object-fit:cover;
+    transition:transform 0.4s ease;
+  }
+  .design-card:hover .design-img-wrap img { transform:scale(1.06); }
+
+  /* placeholder when no image */
+  .design-placeholder {
+    width:100%; height:100%; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:0.5rem;
+    font-size:2.5rem; color:rgba(125,51,255,0.3);
+  }
+  .design-placeholder p { font-size:0.75rem; color:rgba(255,255,255,0.15); }
+
+  .design-overlay {
+    position:absolute; inset:0;
+    background:rgba(20,18,35,0.6); opacity:0;
+    display:flex; align-items:center; justify-content:center;
+    transition:opacity 0.3s; font-size:1.8rem;
+  }
+  .design-card:hover .design-overlay { opacity:1; }
+
+  .design-info { padding:1rem 1.2rem; }
+  .design-title { font-size:0.95rem; font-weight:700; margin-bottom:0.25rem; }
+  .design-student {
+    display:flex; align-items:center; gap:8px; margin-top:0.6rem;
+  }
+  .design-avatar {
+    width:28px; height:28px; border-radius:50%;
+    background:linear-gradient(135deg,var(--violet),var(--violet-1));
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.7rem; font-weight:700; color:var(--white); flex-shrink:0;
+  }
+  .design-student-name { font-size:0.8rem; color:var(--white-2); }
+  .design-track {
+    font-size:0.7rem; color:var(--violet-1);
+    background:rgba(125,51,255,0.1); border:1px solid rgba(125,51,255,0.2);
+    padding:0.15rem 0.5rem; border-radius:50px; margin-left:auto;
+  }
+
+  footer {
+    text-align:center; padding:2rem 5%;
+    border-top:1px solid rgba(125,51,255,0.1);
+    color:var(--white-2); font-size:0.82rem;
+  }
+  footer a { color:var(--violet); text-decoration:none; }
+
+  @media(max-width:500px) {
+    .design-grid { grid-template-columns:1fr; }
+  }
+  
+  
+  /* ===== LIGHTBOX ===== */
+.lightbox-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(20,18,35,0.96);
+  backdrop-filter: blur(16px);
+  display: none; align-items: center; justify-content: center;
+  padding: 1.5rem;
+  animation: lbFadeIn 0.3s ease;
+}
+.lightbox-overlay.open { display: flex; }
+
+@keyframes lbFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.lightbox-inner {
+  position: relative; max-width: 900px; width: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 1rem;
+  animation: lbPopIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes lbPopIn {
+  from { opacity: 0; transform: scale(0.88) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.lightbox-img-wrap {
+  width: 100%; border-radius: 16px; overflow: hidden;
+  border: 1.5px solid rgba(125,51,255,0.3);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 60px rgba(125,51,255,0.1);
+  background: var(--dark-1);
+  max-height: 75vh; display: flex; align-items: center; justify-content: center;
+}
+.lightbox-img-wrap img {
+  width: 100%; max-height: 75vh;
+  object-fit: contain; display: block;
+}
+
+.lightbox-info {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; flex-wrap: wrap; gap: 0.8rem;
+}
+.lightbox-student {
+  display: flex; align-items: center; gap: 10px;
+}
+.lightbox-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--violet), var(--violet-1));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.82rem; font-weight: 700; color: var(--white);
+  border: 2px solid rgba(125,51,255,0.4);
+}
+.lightbox-name { font-weight: 700; font-size: 0.95rem; }
+.lightbox-title-text { font-size: 0.8rem; color: var(--white-2); }
+.lightbox-track {
+  font-size: 0.75rem; font-weight: 700;
+  background: rgba(125,51,255,0.12);
+  border: 1px solid rgba(125,51,255,0.25);
+  color: var(--violet-1); padding: 0.25rem 0.7rem;
+  border-radius: 50px;
+}
+
+/* close button */
+.lightbox-close {
+  position: fixed; top: 20px; right: 20px; z-index: 10000;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--dark-1); border: 1.5px solid rgba(125,51,255,0.3);
+  color: var(--white-2); font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.25s;
+}
+.lightbox-close:hover {
+  background: var(--violet); border-color: var(--violet);
+  color: var(--white); transform: scale(1.1) rotate(90deg);
+}
+
+/* prev / next arrows */
+.lightbox-arrow {
+  position: fixed; top: 50%; transform: translateY(-50%);
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--dark-1); border: 1.5px solid rgba(125,51,255,0.25);
+  color: var(--white-2); font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.25s; z-index: 10000;
+  user-select: none;
+}
+.lightbox-arrow:hover {
+  background: var(--violet); border-color: var(--violet); color: var(--white);
+}
+.lightbox-prev { left: 16px; }
+.lightbox-next { right: 16px; }
+
+/* counter */
+.lightbox-counter {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--dark-1); border: 1px solid rgba(125,51,255,0.2);
+  padding: 0.35rem 1rem; border-radius: 50px;
+  font-size: 0.78rem; color: var(--white-2); z-index: 10000;
+}
+
+/* cursor on cards */
+.design-card { cursor: zoom-in; }
+  
+  
+  
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">Grewup<span>2.0</span></a>
+  <a href="javascript:window.close()" class="nav-back">✕ বন্ধ করো</a>
+</nav>
+
+<div class="showcase-header">
+  <div class="tag">🎨 ডিজাইন শোকেস</div>
+  <h1>শিক্ষার্থীদের <span>ক্রিয়েটিভ কাজ</span></h1>
+  <p>GrEwUp 2.0 এর শিক্ষার্থীরা যা তৈরি করেছে</p>
+</div>
+
+<div class="design-grid">
+
+  <!-- Card 1 -->
+  <div class="design-card">
+    <div class="design-img-wrap">
+      <img src="design1.jpg" alt="ডিজাইন ১"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="design-placeholder" style="display:none">🎨<p>design1.jpg</p></div>
+      <div class="design-overlay">🔍</div>
+    </div>
+    <div class="design-info">
+      <div class="design-title">অ্যাপ UI ডিজাইন</div>
+      <div class="design-student">
+        <div class="design-avatar">রা</div>
+        <div class="design-student-name">রাহাত আহমেদ</div>
+        <span class="design-track">UI/UX</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 2 -->
+  <div class="design-card">
+    <div class="design-img-wrap">
+      <img src="design2.jpg" alt="ডিজাইন ২"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="design-placeholder" style="display:none">🎨<p>design2.jpg</p></div>
+      <div class="design-overlay">🔍</div>
+    </div>
+    <div class="design-info">
+      <div class="design-title">ব্র্যান্ড লোগো ডিজাইন</div>
+      <div class="design-student">
+        <div class="design-avatar">না</div>
+        <div class="design-student-name">নাফিসা আক্তার</div>
+        <span class="design-track">ব্র্যান্ডিং</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3 -->
+  <div class="design-card">
+    <div class="design-img-wrap">
+      <img src="design3.jpg" alt="ডিজাইন ৩"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="design-placeholder" style="display:none">🎨<p>design3.jpg</p></div>
+      <div class="design-overlay">🔍</div>
+    </div>
+    <div class="design-info">
+      <div class="design-title">পোস্টার ডিজাইন</div>
+      <div class="design-student">
+        <div class="design-avatar">ফা</div>
+        <div class="design-student-name">ফারহান হোসেন</div>
+        <span class="design-track">গ্রাফিক</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 4 -->
+  <div class="design-card">
+    <div class="design-img-wrap">
+      <img src="design4.jpg" alt="ডিজাইন ৪"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="design-placeholder" style="display:none">🎨<p>design4.jpg</p></div>
+      <div class="design-overlay">🔍</div>
+    </div>
+    <div class="design-info">
+      <div class="design-title">ই-স্পোর্টস থাম্বনেইল</div>
+      <div class="design-student">
+        <div class="design-avatar">তা</div>
+        <div class="design-student-name">তানজিলা খানম</div>
+        <span class="design-track">ই-স্পোর্টস</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <p>© ২০২৬ <a href="index.html">GrEwUp 2.0</a> — শিক্ষার্থীদের ক্রিয়েটিভ শোকেস 🇧🇩</p>
+</footer>
+
+
+<!-- LIGHTBOX -->
+<div class="lightbox-overlay" id="lightbox" onclick="lbClickOutside(event)">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <button class="lightbox-arrow lightbox-prev" onclick="lbNav(-1)">‹</button>
+  <button class="lightbox-arrow lightbox-next" onclick="lbNav(1)">›</button>
+  <div class="lightbox-counter" id="lbCounter">১ / ৪</div>
+
+  <div class="lightbox-inner">
+    <div class="lightbox-img-wrap">
+      <img id="lbImg" src="" alt="">
+    </div>
+    <div class="lightbox-info">
+      <div class="lightbox-student">
+        <div class="lightbox-avatar" id="lbAvatar"></div>
+        <div>
+          <div class="lightbox-name" id="lbName"></div>
+          <div class="lightbox-title-text" id="lbTitle"></div>
+        </div>
+      </div>
+      <span class="lightbox-track" id="lbTrack"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== LIGHTBOX =====
+let lbIndex = 0;
+let lbData  = [];
+
+// Collect all design cards on page load
+window.addEventListener('load', () => {
+  const cards = document.querySelectorAll('.design-card');
+
+  cards.forEach((card, i) => {
+    const img     = card.querySelector('.design-img-wrap img');
+    const title   = card.querySelector('.design-title').textContent;
+    const name    = card.querySelector('.design-student-name').textContent;
+    const avatar  = card.querySelector('.design-avatar').textContent;
+    const track   = card.querySelector('.design-track').textContent;
+
+    lbData.push({ src: img.src, title, name, avatar, track });
+
+    card.addEventListener('click', () => openLightbox(i));
+  });
+});
+
+function openLightbox(index) {
+  lbIndex = index;
+  renderLightbox();
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderLightbox() {
+  const d = lbData[lbIndex];
+  if (!d) return;
+
+  // swap image with fade
+  const img = document.getElementById('lbImg');
+  img.style.opacity = '0';
+  img.style.transition = 'opacity 0.2s';
+  setTimeout(() => {
+    img.src = d.src;
+    img.alt = d.title;
+    img.onload = () => { img.style.opacity = '1'; };
+    // fallback if already cached
+    if (img.complete) img.style.opacity = '1';
+  }, 100);
+
+  document.getElementById('lbAvatar').textContent = d.avatar;
+  document.getElementById('lbName').textContent   = d.name;
+  document.getElementById('lbTitle').textContent  = d.title;
+  document.getElementById('lbTrack').textContent  = d.track;
+  document.getElementById('lbCounter').textContent =
+    (lbIndex + 1) + ' / ' + lbData.length;
+}
+
+function lbNav(dir) {
+  lbIndex = (lbIndex + dir + lbData.length) % lbData.length;
+  renderLightbox();
+}
+
+function lbClickOutside(e) {
+  if (e.target === document.getElementById('lightbox')) closeLightbox();
+}
+
+// keyboard support
+document.addEventListener('keydown', e => {
+  const lb = document.getElementById('lightbox');
+  if (!lb.classList.contains('open')) return;
+  if (e.key === 'Escape')     closeLightbox();
+  if (e.key === 'ArrowRight') lbNav(1);
+  if (e.key === 'ArrowLeft')  lbNav(-1);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Geo Generator</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #000000;
+            --header: #1a1a1a;
+            --accent: #007aff;
+            --card-bg: #111111;
+            --border: rgba(255, 255, 255, 0.1);
+            --text-secondary: #555;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            -webkit-font-smoothing: antialiased; 
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100dvh; width: 100vw;
+            background-color: var(--bg); font-family: 'Space Grotesk', sans-serif;
+            overflow: hidden; display: flex; flex-direction: column; color: white;
+        }
+
+        header {
+            background: var(--header); display: flex; align-items: center; justify-content: space-between;
+            padding: env(safe-area-inset-top) 16px 0 16px;
+            height: calc(60px + env(safe-area-inset-top));
+            border-bottom: 1px solid var(--border); flex-shrink: 0;
+        }
+
+        /* Fixed macOS Dots */
+        .traffic-lights { display: flex; gap: 6px; align-items: center; width: 40px; }
+        .traffic-lights span { display: inline-block; width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+        .r { background: #ff5f57; } .y { background: #febc2e; } .g { background: #28c840; }
+
+        .title { font-size: 14px; font-weight: 600; color: #888; }
+
+        main { flex: 1; overflow-y: auto; padding: 20px; }
+
+        .data-card {
+            background: var(--card-bg); border: 1px solid var(--border);
+            border-radius: 20px; padding: 20px; margin-bottom: 16px;
+            position: relative;
+        }
+
+        label { 
+            display: block; color: var(--text-secondary); font-size: 10px; 
+            font-weight: 600; letter-spacing: 1.2px; margin-bottom: 8px; 
+            text-transform: uppercase; 
+        }
+
+        .field {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #000; border: 1px solid #222; border-radius: 12px;
+            padding: 14px; margin-bottom: 16px; cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .field:active { border-color: #444; }
+
+        .value { font-family: 'Space Grotesk'; font-size: 15px; color: #eee; word-break: break-all; width: 85%; }
+        
+        .word-location { color: var(--accent); font-weight: 600; }
+
+        .copy-icon { color: #444; flex-shrink: 0; }
+
+        .btn-main { 
+            background: var(--accent); color: white; border: none; padding: 18px; 
+            border-radius: 16px; font-size: 16px; font-weight: 600; font-family: inherit; 
+            cursor: pointer; width: 100%; transition: transform 0.1s; margin-top: 10px;
+        }
+        .btn-main:active { transform: scale(0.98); }
+
+        /* Toast Notification */
+        #toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #333; color: white; padding: 10px 20px; border-radius: 20px;
+            font-size: 12px; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="traffic-lights">
+            <span class="r"></span><span class="y"></span><span class="g"></span>
+        </div>
+        <div class="title">GEO GENERATOR</div>
+        <div style="width: 40px;"></div>
+    </header>
+
+    <main>
+        <div class="data-card">
+            <label>Word Location (Coordinate)</label>
+            <div class="field" onclick="copyText('val-word')">
+                <div class="value word-location" id="val-word">/// Generate to start</div>
+                <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </div>
+
+            <label>Full Name</label>
+            <div class="field" onclick="copyText('val-name')">
+                <div class="value" id="val-name">-</div>
+                <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </div>
+
+            <label>Street Address</label>
+            <div class="field" onclick="copyText('val-addr')">
+                <div class="value" id="val-addr">-</div>
+                <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+                <div style="flex: 2;">
+                    <label>City</label>
+                    <div class="field" onclick="copyText('val-city')">
+                        <div class="value" id="val-city">-</div>
+                    </div>
+                </div>
+                <div style="flex: 1.5;">
+                    <label>Zip Code</label>
+                    <div class="field" onclick="copyText('val-zip')">
+                        <div class="value" id="val-zip">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-main" onclick="generateIdentity()">Generate Random Profile</button>
+    </main>
+
+    <div id="toast">Copied to clipboard</div>
+
+    <script>
+        const words = ["filled", "count", "soap", "brave", "river", "glimmer", "shade", "vivid", "stone", "faded", "pulse", "echo", "frost", "neon", "wild", "urban", "calm", "bold", "crisp", "swift", "ocean", "desert", "cloud", "timber", "silver", "gold", "amber", "lunar", "solar", "pixel"];
+        
+        const firstNames = ["James", "Elena", "Marcus", "Sasha", "Julian", "Kiara", "Leo", "Maya", "Victor", "Naomi"];
+        const lastNames = ["Vance", "Chen", "Blackwood", "Hale", "Rossi", "Mendez", "Knight", "Sterling", "Hayes"];
+        const streets = ["Sunset Blvd", "Neon Way", "Harbor Drive", "Cedar Lane", "Skyline Ave", "Industrial Loop", "Prime St"];
+        const cities = ["New York", "London", "Tokyo", "Berlin", "Singapore", "Austin", "Dubai", "Seoul"];
+
+        function generateIdentity() {
+            // Generate Word Location
+            const w1 = words[Math.floor(Math.random() * words.length)];
+            const w2 = words[Math.floor(Math.random() * words.length)];
+            const w3 = words[Math.floor(Math.random() * words.length)];
+            
+            const name = firstNames[Math.floor(Math.random() * firstNames.length)] + " " + lastNames[Math.floor(Math.random() * lastNames.length)];
+            const addr = (Math.floor(Math.random() * 8999) + 1000) + " " + streets[Math.floor(Math.random() * streets.length)];
+            const city = cities[Math.floor(Math.random() * cities.length)];
+            const zip = Math.floor(Math.random() * 89999) + 10000;
+
+            document.getElementById('val-word').innerText = `/// ${w1}.${w2}.${w3}`;
+            document.getElementById('val-name').innerText = name;
+            document.getElementById('val-addr').innerText = addr;
+            document.getElementById('val-city').innerText = city;
+            document.getElementById('val-zip').innerText = zip;
+        }
+
+        function copyText(id) {
+            const text = document.getElementById(id).innerText;
+            if (text.includes("Generate")) return;
+
+            navigator.clipboard.writeText(text).then(() => {
+                const toast = document.getElementById('toast');
+                toast.style.opacity = '1';
+                setTimeout(() => toast.style.opacity = '0', 1500);
+            });
+        }
+
+        // Initialize with one
+        window.onload = generateIdentity;
+    </script>
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Vault Notes</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #000000;
+            --header: #1a1a1a;
+            --accent: #007aff;
+            --card-bg: #111111;
+            --border: rgba(255, 255, 255, 0.1);
+            --danger: #ff3b30;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            -webkit-font-smoothing: antialiased; 
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100dvh; width: 100vw;
+            background-color: var(--bg); font-family: 'Space Grotesk', sans-serif;
+            overflow: hidden; display: flex; flex-direction: column; color: white;
+        }
+
+        /* Header */
+        header {
+            background: var(--header); display: flex; align-items: center; justify-content: space-between;
+            padding: env(safe-area-inset-top) 16px 0 16px;
+            height: calc(60px + env(safe-area-inset-top));
+            border-bottom: 1px solid var(--border); flex-shrink: 0; z-index: 100;
+        }
+
+        .traffic-lights { display: flex; gap: 6px; align-items: center; width: 40px; }
+        .traffic-lights span { display: inline-block; width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+        .r { background: #ff5f57; } .y { background: #febc2e; } .g { background: #28c840; }
+
+        .title { font-size: 14px; font-weight: 600; color: #888; letter-spacing: 1px; }
+
+        main { flex: 1; overflow-y: auto; position: relative; display: flex; flex-direction: column; }
+
+        /* Auth Screen */
+        .auth-container { padding: 40px 20px; text-align: center; display: flex; flex-direction: column; justify-content: center; height: 100%; }
+        input[type="password"], input[type="text"] {
+            width: 100%; background: #111; border: 1px solid #333; color: white; 
+            padding: 16px; border-radius: 12px; font-family: inherit; font-size: 16px; margin-bottom: 15px;
+        }
+
+        .btn-main { 
+            background: var(--accent); color: white; border: none; padding: 18px; 
+            border-radius: 16px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%;
+        }
+        .btn-main:active { opacity: 0.8; transform: scale(0.98); }
+
+        /* Notes List */
+        .notes-list { padding: 20px; }
+        .note-card {
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px;
+            padding: 16px; margin-bottom: 12px; cursor: pointer; position: relative;
+        }
+        .note-card:active { opacity: 0.7; }
+        .note-card h3 { margin: 0 0 5px 0; font-size: 16px; color: #fff; }
+        .note-card p { margin: 0; font-size: 13px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .note-date { font-size: 10px; color: #444; margin-top: 10px; display: block; }
+
+        /* Editor View */
+        #editor-view { display: none; flex-direction: column; height: 100%; padding: 20px; background: #000; position: absolute; top: 0; left: 0; width: 100%; z-index: 50; }
+        #note-body { flex: 1; background: transparent; border: none; color: #ccc; font-size: 16px; font-family: inherit; resize: none; margin-top: 10px; line-height: 1.6; }
+        
+        .editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .btn-text { background: none; border: none; color: var(--accent); font-weight: 600; font-size: 16px; cursor: pointer; padding: 5px; }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed; bottom: 30px; right: 20px; width: 60px; height: 60px;
+            background: var(--accent); border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; box-shadow: 0 10px 20px rgba(0,122,255,0.3); z-index: 40;
+        }
+        .fab:active { transform: scale(0.9); }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="traffic-lights">
+            <span class="r"></span><span class="y"></span><span class="g"></span>
+        </div>
+        <div class="title" id="vault-title">VAULT NOTES</div>
+        <div style="width: 40px; display: flex; justify-content: flex-end;">
+            <button class="btn-text hidden" id="logout-btn" onclick="lockVault()" style="color: #444; font-size: 12px;">Lock</button>
+        </div>
+    </header>
+
+    <main>
+        <div id="auth-screen" class="auth-container">
+            <h2 id="auth-title">Encrypted Vault</h2>
+            <p id="auth-desc" style="color: #666; font-size: 14px; margin-bottom: 25px;">Enter your Master Key to decrypt your notes.</p>
+            <input type="password" id="master-key" placeholder="Enter Master Key...">
+            <button class="btn-main" id="auth-btn" onclick="handleAuth()">Access Vault</button>
+        </div>
+
+        <div id="list-screen" class="hidden">
+            <div class="notes-list" id="notes-container">
+                </div>
+            <div class="fab" onclick="openEditor()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </div>
+        </div>
+
+        <div id="editor-view">
+            <div class="editor-header">
+                <button class="btn-text" onclick="closeEditor()">Cancel</button>
+                <div style="display: flex; gap: 15px;">
+                    <button class="btn-text" style="color: var(--danger);" id="del-btn" onclick="deleteCurrentNote()">Delete</button>
+                    <button class="btn-text" onclick="saveNote()">Save</button>
+                </div>
+            </div>
+            <input type="text" id="note-title" placeholder="Title" style="border: none; background: transparent; font-size: 22px; font-weight: 600; padding-left: 0; margin-bottom: 0;">
+            <textarea id="note-body" placeholder="Start typing..."></textarea>
+        </div>
+    </main>
+
+    <script>
+        let currentKey = "";
+        let notes = [];
+        let editingIndex = -1;
+
+        window.onload = () => {
+            const stored = localStorage.getItem('vault_notes_data');
+            if (!stored) {
+                document.getElementById('auth-title').innerText = "Create Vault";
+                document.getElementById('auth-desc').innerText = "Set a Master Key. If you lose this, your notes are gone forever.";
+                document.getElementById('auth-btn').innerText = "Initialize Vault";
+            }
+        };
+
+        function handleAuth() {
+            const key = document.getElementById('master-key').value;
+            if (!key) return alert("Key required");
+
+            const stored = localStorage.getItem('vault_notes_data');
+            
+            if (!stored) {
+                // New User
+                currentKey = key;
+                saveToStorage(); // Initial empty save
+                showNotesList();
+            } else {
+                // Existing User - Try to decrypt
+                try {
+                    const bytes = CryptoJS.AES.decrypt(stored, key);
+                    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+                    if (!decrypted) throw new Error();
+                    
+                    notes = JSON.parse(decrypted);
+                    currentKey = key;
+                    showNotesList();
+                } catch (e) {
+                    alert("Invalid Master Key");
+                }
+            }
+        }
+
+        function showNotesList() {
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('list-screen').classList.remove('hidden');
+            document.getElementById('logout-btn').classList.remove('hidden');
+            renderNotes();
+        }
+
+        function renderNotes() {
+            const container = document.getElementById('notes-container');
+            container.innerHTML = "";
+            
+            if (notes.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:#333; margin-top:50px;">No notes yet. Tap + to start.</p>`;
+                return;
+            }
+
+            notes.forEach((note, index) => {
+                const card = document.createElement('div');
+                card.className = 'note-card';
+                card.onclick = () => openEditor(index);
+                card.innerHTML = `
+                    <h3>${note.title || 'Untitled'}</h3>
+                    <p>${note.body || 'No content'}</p>
+                    <span class="note-date">${note.date}</span>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openEditor(index = -1) {
+            editingIndex = index;
+            const editor = document.getElementById('editor-view');
+            const delBtn = document.getElementById('del-btn');
+            
+            if (index > -1) {
+                document.getElementById('note-title').value = notes[index].title;
+                document.getElementById('note-body').value = notes[index].body;
+                delBtn.classList.remove('hidden');
+            } else {
+                document.getElementById('note-title').value = "";
+                document.getElementById('note-body').value = "";
+                delBtn.classList.add('hidden');
+            }
+            
+            editor.style.display = 'flex';
+        }
+
+        function closeEditor() {
+            document.getElementById('editor-view').style.display = 'none';
+        }
+
+        function saveNote() {
+            const title = document.getElementById('note-title').value;
+            const body = document.getElementById('note-body').value;
+            if (!title && !body) return closeEditor();
+
+            const noteData = {
+                title,
+                body,
+                date: new Date().toLocaleString()
+            };
+
+            if (editingIndex > -1) {
+                notes[editingIndex] = noteData;
+            } else {
+                notes.unshift(noteData);
+            }
+
+            saveToStorage();
+            renderNotes();
+            closeEditor();
+        }
+
+        function deleteCurrentNote() {
+            if (editingIndex > -1 && confirm("Delete this note?")) {
+                notes.splice(editingIndex, 1);
+                saveToStorage();
+                renderNotes();
+                closeEditor();
+            }
+        }
+
+        function saveToStorage() {
+            const encrypted = CryptoJS.AES.encrypt(JSON.stringify(notes), currentKey).toString();
+            localStorage.setItem('vault_notes_data', encrypted);
+        }
+
+        function lockVault() {
+            currentKey = "";
+            notes = [];
+            document.getElementById('master-key').value = "";
+            document.getElementById('list-screen').classList.add('hidden');
+            document.getElementById('logout-btn').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

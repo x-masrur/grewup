@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Vault Mobile</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #000000;
+            --header: #1a1a1a;
+            --accent: #007aff;
+            --success: #34c759;
+            --danger: #ff3b30;
+            --card-bg: #111111;
+            --text: #ffffff;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { 
+            box-sizing: border-box; 
+            -webkit-font-smoothing: antialiased; 
+            -webkit-tap-highlight-color: transparent; /* Removes default mobile tap flash */
+            outline: none; /* Removes browser focus rings */
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100dvh; width: 100vw;
+            background-color: var(--bg); font-family: 'Space Grotesk', sans-serif;
+            overflow: hidden; display: flex; flex-direction: column; color: white;
+        }
+
+        /* Header */
+        header {
+            background: var(--header); display: flex; align-items: center; justify-content: space-between;
+            padding: env(safe-area-inset-top) 16px 0 16px;
+            height: calc(60px + env(safe-area-inset-top));
+            border-bottom: 1px solid var(--border); flex-shrink: 0; z-index: 100;
+        }
+
+        /* Fixed macOS Dots */
+        .traffic-lights { display: flex; gap: 6px; align-items: center; width: 40px; }
+        .traffic-lights span { 
+            display: inline-block; /* Forces width/height to apply correctly */
+            width: 12px; height: 12px; 
+            border-radius: 50%; 
+            flex-shrink: 0; /* Prevents squishing */
+        }
+        .r { background: #ff5f57; } .y { background: #febc2e; } .g { background: #28c840; }
+
+        .segmented-control {
+            display: flex; background: #000; padding: 2px; border-radius: 10px; border: 1px solid var(--border);
+        }
+
+        .segment {
+            padding: 6px 14px; font-size: 12px; font-weight: 600; color: #888;
+            border: none; background: none; border-radius: 8px; font-family: 'Space Grotesk', sans-serif; cursor: pointer;
+        }
+
+        .segment.active { background: #333; color: #fff; }
+
+        .header-actions { width: 40px; display: flex; justify-content: flex-end; }
+        .icon-btn { background: transparent; border: none; color: #888; padding: 5px; border-radius: 8px; cursor: pointer; }
+        .icon-btn:active { opacity: 0.5; } /* Clean opacity drop instead of color flash */
+
+        main { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 40px; position: relative; }
+
+        /* Buttons (Blue Active FX Removed) */
+        .btn-main { background: var(--accent); color: white; border: none; padding: 18px; border-radius: 16px; font-size: 16px; font-weight: 600; font-family: 'Space Grotesk'; cursor: pointer; width: 100%; transition: transform 0.1s; }
+        .btn-main:active { transform: scale(0.97); }
+        .btn-outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 18px; border-radius: 16px; font-size: 16px; font-weight: 600; font-family: 'Space Grotesk'; cursor: pointer; width: 100%; transition: transform 0.1s; }
+        .btn-outline:active { transform: scale(0.97); opacity: 0.8; } /* Removed blue bg fill */
+
+        /* Inputs */
+        input[type="password"], textarea {
+            width: 100%; background: #111; border: 1px solid #333; color: white; 
+            padding: 16px; border-radius: 12px; font-family: inherit; font-size: 16px;
+            margin-bottom: 15px; resize: none;
+        }
+        input[type="password"]:focus, textarea:focus { border-color: #555; }
+        
+        /* Views */
+        .auth-screen { display: flex; flex-direction: column; gap: 15px; text-align: center; justify-content: center; height: 100%; }
+
+        /* Dashboard Items */
+        .balance-card { padding: 30px 20px; text-align: center; background: linear-gradient(180deg, #111, #000); border-radius: 24px; border: 1px solid var(--border); margin-bottom: 20px; }
+        .balance-amount { font-size: 38px; font-weight: 600; margin: 10px 0; }
+        .address-pill { background: #222; padding: 8px 12px; border-radius: 20px; font-size: 11px; color: #888; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+        .address-pill:active { opacity: 0.7; }
+
+        .market-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px; background: var(--card-bg); border-radius: 18px; margin-bottom: 12px;
+            border: 1px solid transparent; transition: opacity 0.2s; cursor: pointer;
+        }
+        .market-item:active { opacity: 0.6; } /* Clean opacity drop instead of blue border */
+        
+        .coin-info { display: flex; align-items: center; gap: 12px; }
+        .coin-img { width: 32px; height: 32px; border-radius: 50%; }
+        .coin-price { text-align: right; }
+        .price-up { color: var(--success); font-size: 12px; }
+
+        /* Overlays / Modals */
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; display: none; flex-direction: column; padding: 40px 20px; overflow-y: auto; backdrop-filter: blur(5px); justify-content: center; }
+        
+        /* Seed Phrase UI */
+        .seed-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
+        .seed-word { background: #1a1a1a; padding: 12px 8px; border-radius: 8px; font-size: 13px; color: #e2e8f0; text-align: center; border: 1px solid #333; font-family: monospace; display: flex; gap: 6px; justify-content: center; }
+        .seed-num { color: #666; font-size: 10px; }
+
+        #qr-container { background: white; padding: 15px; border-radius: 20px; display: inline-block; margin-top: 20px; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="traffic-lights">
+            <span class="r"></span><span class="y"></span><span class="g"></span>
+        </div>
+        <div class="segmented-control" id="nav-group" style="display:none;">
+            <button class="segment active" onclick="showDashboard()">Wallet</button>
+            <button class="segment" onclick="showMarket()">Market</button>
+        </div>
+        <div class="header-actions">
+            <button id="logout-btn" class="icon-btn hidden" onclick="logoutWallet()" title="Remove Wallet">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <div id="setup-screen" class="auth-screen">
+            <h1 style="margin-bottom: 5px;">Vault</h1>
+            <p style="color: #666; margin-bottom: 30px;">Ethereum Multi-Tool</p>
+            <button class="btn-main" onclick="generateWallet()">Create New Wallet</button>
+            <button class="btn-outline" onclick="openImport()">Import Seed Phrase</button>
+        </div>
+
+        <div id="unlock-screen" class="auth-screen hidden">
+            <h1 style="margin-bottom: 5px;">Welcome Back</h1>
+            <p style="color: #666;">Enter password to decrypt storage</p>
+            <input type="password" id="unlock-pass" placeholder="Enter Password">
+            <button class="btn-main" onclick="unlockWallet()">Unlock Wallet</button>
+            <button class="btn-outline" onclick="logoutWallet()" style="border-color: var(--danger); color: var(--danger); margin-top: 10px;">Reset & Delete Wallet</button>
+        </div>
+
+        <div id="dashboard-view" class="hidden">
+            <div class="balance-card">
+                <label style="color: #555; font-size: 12px; letter-spacing: 1px;">TOTAL BALANCE</label>
+                <div class="balance-amount" id="eth-balance">0.00 ETH</div>
+                <div class="address-pill" onclick="showDeposit()">
+                    <span id="wallet-addr-short">0x000...000</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </div>
+            </div>
+
+            <h3 style="font-size: 16px; margin-bottom: 15px;">Live Prices</h3>
+            <div id="market-list">
+                <p style="color: #444; text-align: center;">Loading Market Data...</p>
+            </div>
+        </div>
+
+        <div id="set-password-overlay" class="overlay">
+            <h2 style="text-align: center; margin-bottom: 5px;">Secure Wallet</h2>
+            <p style="color: #888; text-align: center; margin-bottom: 20px; font-size: 14px;">Set a local password to encrypt your key on this device.</p>
+            <input type="password" id="new-pass" placeholder="Create Password">
+            <button class="btn-main" onclick="confirmPassword()">Encrypt & Continue</button>
+            <button class="btn-outline" style="margin-top: 10px;" onclick="cancelPassword()">Cancel</button>
+        </div>
+
+        <div id="seed-overlay" class="overlay">
+            <h2 style="text-align: center; margin-bottom: 5px;">Recovery Phrase</h2>
+            <p style="color: var(--danger); font-size: 13px; text-align: center; line-height: 1.4;">Write down these 12 words securely. Do not share them.</p>
+            
+            <div class="seed-grid" id="seed-grid-container"></div>
+
+            <button class="btn-outline" id="copy-seed-btn" onclick="copySeedPhrase()" style="margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                Copy to Clipboard
+            </button>
+            <button class="btn-main" onclick="confirmSeedSaved()">I have saved it safely</button>
+        </div>
+
+        <div id="import-overlay" class="overlay" style="justify-content: flex-start;">
+            <h2 style="text-align: center;">Import Wallet</h2>
+            <p style="color: #888; text-align: center; margin-bottom: 20px;">Enter your 12-word seed phrase</p>
+            <textarea id="import-phrase" rows="4" placeholder="word1 word2 word3..."></textarea>
+            <button class="btn-main" style="margin-top: 20px;" onclick="confirmImport()">Import</button>
+            <button class="btn-outline" style="margin-top: 10px;" onclick="closeImport()">Cancel</button>
+        </div>
+
+        <div id="deposit-overlay" class="overlay" style="text-align: center; justify-content: flex-start;">
+            <h2>Deposit ETH</h2>
+            <p style="color: #888; font-size: 14px;">Scan to send assets to your wallet</p>
+            <div><div id="qr-container"></div></div>
+            <p id="full-addr" style="word-break: break-all; margin-top: 20px; font-size: 12px; color: var(--accent);"></p>
+            <button class="btn-outline" style="margin-top: auto;" onclick="closeDeposit()">Close</button>
+        </div>
+
+        <div id="chart-overlay" class="overlay" style="justify-content: flex-start;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                <img id="chart-coin-img" src="" class="coin-img">
+                <h2 id="chart-coin-name" style="margin:0;">-</h2>
+            </div>
+            <canvas id="priceChart"></canvas>
+            <button class="btn-outline" style="margin-top: auto;" onclick="closeChart()">Close</button>
+        </div>
+    </main>
+
+    <script>
+        // CONFIG
+        const ALCHEMY_KEY = "wFvmcaZRJlHluQIrYkmaw";
+        const provider = new ethers.JsonRpcProvider(`https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`);
+        
+        let wallet = null;
+        let pendingWallet = null; 
+        let keyToEncrypt = null; // Holds key temporarily during password creation
+        let chartInstance = null;
+
+        // --- Initialization & Security ---
+        window.onload = () => {
+            // Check if encrypted data exists
+            if (localStorage.getItem('vault_encrypted_data')) {
+                document.getElementById('setup-screen').classList.add('hidden');
+                document.getElementById('unlock-screen').classList.remove('hidden');
+            }
+        };
+
+        function unlockWallet() {
+            const pass = document.getElementById('unlock-pass').value;
+            if(!pass) return alert("Enter password");
+
+            const encryptedData = localStorage.getItem('vault_encrypted_data');
+            try {
+                // Decrypt using CryptoJS AES
+                const bytes = CryptoJS.AES.decrypt(encryptedData, pass);
+                const decryptedKey = bytes.toString(CryptoJS.enc.Utf8);
+                
+                if(!decryptedKey) throw new Error("Wrong Password");
+                
+                const loadedWallet = new ethers.Wallet(decryptedKey, provider);
+                document.getElementById('unlock-screen').classList.add('hidden');
+                setupWallet(loadedWallet);
+            } catch(e) {
+                alert("Incorrect password. Could not decrypt.");
+            }
+        }
+
+        // --- Password Setup Flow ---
+        function promptForPassword(privateKey) {
+            keyToEncrypt = privateKey;
+            document.getElementById('import-overlay').style.display = 'none';
+            document.getElementById('seed-overlay').style.display = 'none';
+            document.getElementById('set-password-overlay').style.display = 'flex';
+        }
+
+        function confirmPassword() {
+            const pass = document.getElementById('new-pass').value;
+            if(!pass) return alert("You must set a password");
+
+            // Encrypt and save
+            const encryptedStr = CryptoJS.AES.encrypt(keyToEncrypt, pass).toString();
+            localStorage.setItem('vault_encrypted_data', encryptedStr);
+            
+            const newWallet = new ethers.Wallet(keyToEncrypt, provider);
+            document.getElementById('set-password-overlay').style.display = 'none';
+            setupWallet(newWallet);
+            
+            // Clear memory
+            keyToEncrypt = null; 
+            pendingWallet = null;
+        }
+
+        function cancelPassword() {
+            document.getElementById('set-password-overlay').style.display = 'none';
+            keyToEncrypt = null;
+        }
+
+        function logoutWallet() {
+            if(confirm("WARNING: Are you sure you want to delete this wallet from this device? Ensure you have your seed phrase saved!")) {
+                localStorage.removeItem('vault_encrypted_data');
+                location.reload(); 
+            }
+        }
+
+        // --- Wallet Creation & Import ---
+        function generateWallet() {
+            pendingWallet = ethers.Wallet.createRandom();
+            const words = pendingWallet.mnemonic.phrase.split(' ');
+            
+            const grid = document.getElementById('seed-grid-container');
+            grid.innerHTML = "";
+            words.forEach((word, index) => {
+                grid.innerHTML += `<div class="seed-word"><span class="seed-num">${index + 1}.</span> ${word}</div>`;
+            });
+            
+            document.getElementById('seed-overlay').style.display = 'flex';
+        }
+
+        function copySeedPhrase() {
+            if(!pendingWallet) return;
+            navigator.clipboard.writeText(pendingWallet.mnemonic.phrase).then(() => {
+                const btn = document.getElementById('copy-seed-btn');
+                btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34c759" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!`;
+                btn.style.color = "#34c759";
+                btn.style.borderColor = "#34c759";
+                
+                setTimeout(() => {
+                    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy to Clipboard`;
+                    btn.style.color = "var(--accent)";
+                    btn.style.borderColor = "var(--accent)";
+                }, 3000);
+            });
+        }
+
+        function confirmSeedSaved() {
+            if(!pendingWallet) return;
+            // Proceed to encryption layer instead of logging in directly
+            promptForPassword(pendingWallet.privateKey);
+        }
+
+        function openImport() { document.getElementById('import-overlay').style.display = 'flex'; }
+        function closeImport() { document.getElementById('import-overlay').style.display = 'none'; }
+
+        function confirmImport() {
+            const phrase = document.getElementById('import-phrase').value.trim();
+            if(!phrase) return alert("Please enter a phrase.");
+            try {
+                const imported = ethers.Wallet.fromPhrase(phrase);
+                // Proceed to encryption layer instead of logging in directly
+                promptForPassword(imported.privateKey);
+            } catch(e) { alert("Invalid Seed Phrase. Please check your spelling and spaces."); }
+        }
+
+        // --- Core Application Logic ---
+        function setupWallet(w) {
+            wallet = w.connect(provider);
+            
+            // Swap UI
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('unlock-screen').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.remove('hidden');
+            document.getElementById('nav-group').style.display = 'flex';
+            document.getElementById('logout-btn').classList.remove('hidden');
+            
+            const addr = wallet.address;
+            document.getElementById('wallet-addr-short').innerText = addr.substring(0,6) + "..." + addr.substring(38);
+            document.getElementById('full-addr').innerText = addr;
+            
+            updateBalance();
+            fetchMarket();
+        }
+
+        async function updateBalance() {
+            if(!wallet) return;
+            try {
+                const balance = await provider.getBalance(wallet.address);
+                document.getElementById('eth-balance').innerText = parseFloat(ethers.formatEther(balance)).toFixed(4) + " ETH";
+            } catch(e) { console.error("Balance fetch error", e); }
+        }
+
+        function showDeposit() {
+            document.getElementById('deposit-overlay').style.display = 'flex';
+            document.getElementById('qr-container').innerHTML = "";
+            new QRCode(document.getElementById('qr-container'), { text: wallet.address, width: 180, height: 180 });
+        }
+        function closeDeposit() { document.getElementById('deposit-overlay').style.display = 'none'; }
+
+        // --- Market & Charts ---
+        async function fetchMarket() {
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,binancecoin,solana,cardano&order=market_cap_desc&sparkline=true');
+                const data = await response.json();
+                renderMarket(data);
+            } catch(e) { document.getElementById('market-list').innerHTML = "<p style='color:#ff3b30; text-align:center;'>Market data unavailable</p>"; }
+        }
+
+        function renderMarket(coins) {
+            const list = document.getElementById('market-list');
+            list.innerHTML = "";
+            coins.forEach(coin => {
+                const div = document.createElement('div');
+                div.className = "market-item";
+                div.onclick = () => showChart(coin);
+                div.innerHTML = `
+                    <div class="coin-info">
+                        <img src="${coin.image}" class="coin-img">
+                        <div>
+                            <div style="font-weight:600">${coin.name}</div>
+                            <div style="font-size:10px; color:#555">${coin.symbol.toUpperCase()}</div>
+                        </div>
+                    </div>
+                    <div class="coin-price">
+                        <div>$${coin.current_price.toLocaleString()}</div>
+                        <div class="price-up" style="color:${coin.price_change_percentage_24h >= 0 ? '#34c759' : '#ff3b30'}">
+                            ${coin.price_change_percentage_24h.toFixed(2)}%
+                        </div>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function showChart(coin) {
+            document.getElementById('chart-overlay').style.display = 'flex';
+            document.getElementById('chart-coin-name').innerText = coin.name;
+            document.getElementById('chart-coin-img').src = coin.image;
+
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: coin.sparkline_in_7d.price.map((_, i) => i),
+                    datasets: [{
+                        label: 'Price (7D)',
+                        data: coin.sparkline_in_7d.price,
+                        borderColor: '#007aff',
+                        borderWidth: 2, pointRadius: 0, fill: true,
+                        backgroundColor: 'rgba(0, 122, 255, 0.1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { display: false }, y: { grid: { color: '#222' }, ticks: { color: '#555' } } }
+                }
+            });
+        }
+        function closeChart() { document.getElementById('chart-overlay').style.display = 'none'; }
+
+        // --- Navigation ---
+        function showDashboard() { 
+            document.querySelectorAll('.segment')[0].classList.add('active');
+            document.querySelectorAll('.segment')[1].classList.remove('active');
+            document.getElementById('market-list').style.display = 'none';
+            document.querySelector('.balance-card').style.display = 'block';
+            document.querySelector('h3').style.display = 'none';
+            updateBalance(); 
+        }
+        function showMarket() { 
+            document.querySelectorAll('.segment')[1].classList.add('active');
+            document.querySelectorAll('.segment')[0].classList.remove('active');
+            document.querySelector('.balance-card').style.display = 'none';
+            document.querySelector('h3').style.display = 'block';
+            document.getElementById('market-list').style.display = 'block';
+            fetchMarket(); 
+        }
+
+    </script>
+</body>
+</html>
